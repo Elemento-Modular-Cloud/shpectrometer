@@ -10,11 +10,14 @@ with open(path.join(path.dirname(__file__), "psu_data.json")) as jsn:
 
 
 def get_total_power():
-    output = subprocess.run(f"{CMD_TOTAL_POW} {PSU_MAX_POWER} {PSU_EFF_CLASS}",
-                            cwd="/opt/elemento-power-meter",
-                            shell=True,
-                            stdout=subprocess.PIPE)
-    return output.stdout.decode().replace('--', '')
+    try:
+        output = subprocess.run(f"{CMD_TOTAL_POW} {PSU_MAX_POWER} {PSU_EFF_CLASS}",
+                                cwd="/opt/elemento-power-meter",
+                                shell=True,
+                                stdout=subprocess.PIPE)
+        return output.stdout.decode().replace('--', '')
+    except FileNotFoundError:
+        return "Elemento Power Meter not found!"
 
 
 def print_total_power():

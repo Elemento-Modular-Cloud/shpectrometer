@@ -3,6 +3,7 @@ import subprocess
 CMD_HOSTNAME = r"cat /proc/sys/kernel/hostname"
 CMD_KERNEL = r"uname -r"
 CMD_OS_NAME = r'cat /etc/*-release | grep "PRETTY_NAME" | sed "s/PRETTY_NAME=//g"'
+CMD_UPTIME = r'uptime -p | cut -d " " -f2-'
 
 def get_hostname():
     output = subprocess.run(CMD_HOSTNAME,
@@ -25,11 +26,19 @@ def get_os_name():
     return output.stdout.decode().strip().replace('"','')
 
 
+def get_uptime():
+    output = subprocess.run(CMD_UPTIME,
+                            shell=True,
+                            stdout=subprocess.PIPE)
+    return output.stdout.decode().strip()
+
+
 def print_host_info():
     output = ""
     output += f"OS Name: {get_os_name()}\n"
     output += f"Kernel info: {get_kernel_version()}\n"
-    output += f"Hostname: {get_hostname()}"
+    output += f"Hostname: {get_hostname()}\n"
+    output += f"Uptime: {get_uptime()}"
     return output
 
 

@@ -34,7 +34,8 @@ def print_pci_info():
     output += f"\n"
     output += f"Audio:\n"
     for a in get_audio().split('\n'):
-        # output += f"  {a}\n"
+        if not a:
+            continue
         a = a.split(' ', 1)
         a = [a[0]] + a[1].rsplit('[', 1)
         if '[' in a[1]:
