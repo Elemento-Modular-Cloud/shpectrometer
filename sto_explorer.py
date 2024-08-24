@@ -96,8 +96,12 @@ def get_zfs_devices():
         return []
     output = subprocess.run(CMD_ZPOOL_LIST,
                             shell=True,
-                            stdout=subprocess.PIPE)
-    output = output.stdout.decode().splitlines()
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE)
+    output = output.stdout.decode()
+    if "The ZFS modules are not loaded." in output:
+        return []
+    output = output.splitlines()
     ret = []
     for l in output:
         name, size = l.split(' ')
