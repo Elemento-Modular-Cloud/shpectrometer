@@ -60,6 +60,13 @@ def get_nic_master_bridge(nic_name):
     return result.stdout.decode().strip()
 
 def get_bmc_net_config():
+    output = subprocess.run("ipmitool",
+                        shell=True,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE)
+    if "Could not open device" in output.stderr.decode():
+        return {}
+
     output = subprocess.run(CMD_BMC_IP,
                             shell=True,
                             stdout=subprocess.PIPE)
@@ -144,7 +151,7 @@ def print_nics():
 
     output = ""
     for n, nc in nic_configs.items():
-        if nc["addr"]:
+        if nc.get("addr"):
             addr_strs = []
             for a in nc["addr"]:
                 addr_strs.append(f"{a['ip']}/{a['mask']} gateway {a.get('gw')}")
