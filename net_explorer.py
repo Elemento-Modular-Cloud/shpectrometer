@@ -3,6 +3,7 @@ import json
 
 CMD_LIST_NICS = r"ls -l /sys/class/net/*/device | cut -d/ -f5,13"
 CMD_LINK_SPEED = "cat /sys/class/net/<INTERFACE_NAME>/speed"
+CMD_SUP_SPEED = "ethtool <INTERFACE_NAME>"
 CMD_IP_WRAPPER = "ip -p -j address show <INTERFACE_NAME>"
 CMD_GET_BRIDGE = "bridge link show | grep <INTERFACE_NAME> | awk -F'master ' '{print $2}' | cut -d ' ' -f1"
 CMD_GET_GW = "ip r | grep default | grep <IPADDR> | grep <INTERFACE_NAME>"
@@ -13,6 +14,7 @@ CMD_BMC_MASK = "ipmitool lan print | grep -m 1 'Subnet Mask' | cut -d ':' -f2"
 
 SPEED_LUT = {
     "-1": "Unknown",
+    '10': '10Mbps',
     '100': '100Mbps',
     '1000': '1Gbps',
     '2500': '2.5Gbps',
@@ -23,6 +25,20 @@ SPEED_LUT = {
     '100000': '100Gbps',
     '200000': '200Gbps',
     '400000': '400Gbps'
+}
+
+SUP_SPEED_LUT = {
+    '10b': '10Mbps',
+    '100b': '100Mbps',
+    '1000b': '1Gbps',
+    '2500b': '2.5Gbps',
+    '5000b': '5Gbps',
+    '10000b': '10Gbps',
+    '25000b': '25Gbps',
+    '50000b': '50Gbps',
+    '100000b': '100Gbps',
+    '200000b': '200Gbps',
+    '400000b': '400Gbps'
 }
 
 
@@ -39,6 +55,34 @@ def get_nic_speed(nic_name):
                             stdout=subprocess.PIPE)
     return result.stdout.decode().split()[0]
 
+def get_supported_speeds(nic_name):
+    supported_speeds = []
+
+    try:
+        # Run ethtool to get supported link modes for the given nic_name
+        result = subprocess.run(CMD_SUP_SPEED.replace("<INTERFACE_NAME>", nic_name),
+                                stdout=subprocess.PIPE,
+                                stderr=None,
+                                shell=True)
+        lines = result.stdout.decode().splitlines()
+
+        read_line = False
+        # Extract and translate speeds using SPEED_LUT
+        for line in lines:
+            if "Supported link modes:" in line:
+                read_line = True
+            if read_line and "Advertised" in line:
+                break
+            if not read_line:
+                continue
+            for speed in SUP_SPEED_LUT.keys():
+                if speed in line:
+                    supported_speeds.append(SUP_SPEED_LUT[speed])
+
+    except subprocess.CalledProcessError:
+        pass
+    
+    return list(set(supported_speeds))
 
 def get_nic_gw(nic_name, ipaddr):
     result = subprocess.run(CMD_GET_GW.replace("<INTERFACE_NAME>",
@@ -151,14 +195,20 @@ def print_nics():
 
     output = ""
     for n, nc in nic_configs.items():
-        if nc.get("addr"):
+        if nc.get("mac") or nc.get("addr"):
             addr_strs = []
             for a in nc["addr"]:
                 addr_strs.append(f"{a['ip']}/{a['mask']} gateway {a.get('gw')}")
+            if not addr_strs:
+                addr_strs=["Address not set"]
             output+=f"{nc['name']}:\n"
             output+=f"  addr: {', '.join(addr_strs)}\n"
             output+=f"  mac: {nc['mac']}\n"
-            output+=f"  speed: {SPEED_LUT[nc.get('speed')]}\n"
+            if nc.get('speed') == '-1' or not nc.get('speed'):
+                output+=f"  supported speeds: {', '.join(get_supported_speeds(nc['name']))}\n"
+            else:
+                output+=f"  speed: {SPEED_LUT[nc.get('speed')]}\n"
+                
             output+="\n"
 
     return output
