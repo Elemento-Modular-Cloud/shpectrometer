@@ -42,7 +42,7 @@ def get_info():
     output = ""
     output += "Created by Elemento Cloud\n"
     output += "Visit www.elemento.cloud\n"
-    output += "v 0.1.0\n"
+    output += "v 0.1.1\n"
     return output
 
 
