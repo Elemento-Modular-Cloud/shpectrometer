@@ -2,5 +2,6 @@
 
 python3 -m venv venv
 source venv/bin/activate
-pip3 install --upgrade pip
-pip3 install -r requirements.txt
+sudo dnf install glibc-all-langpacks bc smartmontools hdparm
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
